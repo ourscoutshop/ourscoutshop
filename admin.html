@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>অ্যাডমিন — Our Scout Shop</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}body{font-family:'Hind Siliguri',system-ui,sans-serif;background:#f4f4f4;color:#222;padding:10px;max-width:700px;margin:auto}
+h1{background:#a80000;color:#fff;padding:12px;border-radius:10px;font-size:18px;margin-bottom:10px}
+input,select,textarea,button{font:inherit;width:100%;padding:9px;margin:4px 0;border:1px solid #ccc;border-radius:8px}button{background:#a80000;color:#fff;border:0;font-weight:600;cursor:pointer}button.g{background:#fff;color:#a80000;border:1px solid #a80000}
+.c{background:#fff;border-radius:10px;padding:10px;margin:8px 0;border:1px solid #e4e4e4}.tb{display:flex;gap:6px}.tb button{margin:0}.r{display:flex;gap:6px;align-items:center}.r button{width:auto}
+.hm{color:#777;font-size:13px}#app{display:none}small{color:#a80000}
+</style></head><body>
+<h1>🔐 Our Scout Shop — অ্যাডমিন</h1>
+<div id="lg" class="c"><input id="em" type="email" placeholder="ইমেইল"><input id="pw" type="password" placeholder="পাসওয়ার্ড"><button onclick="login()">লগইন</button><small id="er"></small></div>
+<div id="app"><div class="tb"><button onclick="tab('p')">পণ্য</button><button onclick="tab('o')">অর্ডার</button><button onclick="tab('s')">সেটিংস</button><button class="g" onclick="location.reload()">লগআউট</button></div><div id="v"></div></div>
+<script>
+const CFG={pid:"our-scout-shop-43eed",key:"AIzaSyAtz9Auey9DivSmMc80x0w5V6GVOwj4qCg"};
+const CATS=['স্কার্ফ','কাব স্কাউট বই','স্কাউট বই','রোভার বই','হ্যান্ডবুক ও অন্যান্য','খাতা','কি-রিং','কাপড়','ওয়াগল'];
+const base=`https://firestore.googleapis.com/v1/projects/${CFG.pid}/databases/(default)/documents`,$=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let tk='',P=[],O=[];
+const tf=o=>{const f={};for(const k in o){const v=o[k];f[k]=typeof v=='boolean'?{booleanValue:v}:typeof v=='number'?{doubleValue:v}:{stringValue:String(v??'')}}return{fields:f}};
+const fv=d=>{const o={id:d.name.split('/').pop()};for(const k in d.fields||{}){const v=d.fields[k];o[k]=v.stringValue??v.doubleValue??v.integerValue??v.booleanValue}return o};
+const api=async(m,p,b)=>{const r=await fetch(base+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:b&&JSON.stringify(b)});const j=await r.json();if(j.error)throw new Error(j.error.message);return j};
+async function login(){try{const r=await(await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+CFG.key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('#em').value,password:$('#pw').value,returnSecureToken:true})})).json();if(r.error)throw 0;tk=r.idToken;$('#lg').style.display='none';$('#app').style.display='block';tab('p')}catch{$('#er').textContent='লগইন ব্যর্থ — ইমেইল/পাসওয়ার্ড বা Firebase কনফিগ দেখুন'}}
+async function tab(t){$('#v').innerHTML='লোড হচ্ছে...';try{if(t=='p'){P=((await api('GET','/products?pageSize=300')).documents||[]).map(fv);pv()}
+ if(t=='o'){O=((await api('GET','/orders?pageSize=100')).documents||[]).map(fv).reverse();ov()}
+ if(t=='s'){let s={};try{s=fv(await api('GET','/settings/main'))}catch{}sv(s)}}catch(e){$('#v').innerHTML='<small>ত্রুটি: '+E(e.message)+'</small>'}}
+function pv(p={}){$('#v').innerHTML=`<div class="c"><b>${p.id?'পণ্য সম্পাদনা':'নতুন পণ্য'}</b><input id="a1" placeholder="নাম" value="${E(p.name)}"><select id="a2">${CATS.map(c=>`<option ${p.cat==c?'selected':''}>${c}</option>`).join('')}</select><input id="a3" type="number" placeholder="দাম" value="${p.price||''}"><input id="a4" type="number" placeholder="আগের দাম (ঐচ্ছিক)" value="${p.old||''}"><input id="a5" placeholder="ছবির লিংক (https://...)" value="${E(p.img)}"><label><input type="checkbox" id="a6" style="width:auto" ${p.hot=='true'||p.hot===true?'checked':''}> Hot Deal</label><button onclick="sp('${p.id||''}')">সেভ করুন</button></div>`+P.map(x=>`<div class="c r"><div style="flex:1">${E(x.name)}<br><span class="hm">${E(x.cat)} · ৳${x.price}</span></div><button class="g" onclick='pv(${E(JSON.stringify(x)).replace(/'/g,"&#39;")})'>✏️</button><button onclick="dp('${x.id}')">🗑</button></div>`).join('')}
+async function sp(id){const o={name:$('#a1').value.trim(),cat:$('#a2').value,price:+$('#a3').value,old:+$('#a4').value||0,img:$('#a5').value.trim(),hot:$('#a6').checked};if(!o.name||!o.price)return alert('নাম ও দাম দিন');try{id?await api('PATCH','/products/'+id,tf(o)):await api('POST','/products',tf(o));tab('p')}catch(e){alert(e.message)}}
+async function dp(id){if(confirm('মুছে ফেলবেন?')){try{await api('DELETE','/products/'+id);tab('p')}catch(e){alert(e.message)}}}
+function ov(){const ST=['নতুন','কনফার্মড','পাঠানো হয়েছে','ডেলিভারড','বাতিল'];$('#v').innerHTML=O.map(o=>{let it=[];try{it=JSON.parse(o.items)}catch{}return`<div class="c"><b>${E(o.no)}</b> · ${E(o.at)}<br>${E(o.name)} · ${E(o.phone)}<br>${E(o.address)}<br><span class="hm">${it.map(x=>E(x.n)+'×'+x.q).join(', ')}</span><br>মোট ৳${o.total} · অগ্রিম ৳${o.advance} · বাকি ৳${o.due}<br><span class="hm">${E(o.sender)} · ${E(o.trx)}${o.note?' · '+E(o.note):''}</span><select onchange="us('${o.id}',this.value)">${ST.map(s=>`<option ${o.status==s?'selected':''}>${s}</option>`).join('')}</select></div>`}).join('')||'<p class="hm">কোনো অর্ডার নেই</p>'}
+async function us(id,s){try{await api('PATCH','/orders/'+id+'?updateMask.fieldPaths=status',{fields:{status:{stringValue:s}}})}catch(e){alert(e.message)}}
+function sv(s){$('#v').innerHTML=`<div class="c"><b>টিকার লেখা</b><input id="s1" value="${E(s.ticker)}"><b>ব্যানার</b> <span class="hm">(প্রতি লাইনে: শিরোনাম|ক্যাটাগরি|ছবির লিংক)</span><textarea id="s2" rows="6">${E(s.banners)}</textarea><button onclick="ss()">সেটিংস সেভ</button></div>`}
+async function ss(){try{await api('PATCH','/settings/main',tf({ticker:$('#s1').value,banners:$('#s2').value}));alert('সেভ হয়েছে')}catch(e){alert(e.message)}}
+</script></body></html>
